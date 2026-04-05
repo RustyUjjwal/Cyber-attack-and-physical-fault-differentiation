@@ -2,7 +2,6 @@
 
 ![MATLAB](https://img.shields.io/badge/MATLAB-R2023a+-blue.svg)
 ![Simulink](https://img.shields.io/badge/Simulink-Power_Systems-orange.svg)
-![AppDesigner](https://img.shields.io/badge/UI-App_Designer-brightgreen.svg)
 ![License](https://img.shields.io/badge/License-MIT-purple.svg)
 
 ## Overview
