@@ -37,16 +37,3 @@ Hackers can manipulate digital SCADA data, but they cannot easily alter physical
 * **Control Logic:** MATLAB Function Blocks
 * **UI / Dashboard:** MATLAB App Designer (`.mlapp`)
 * *(Optional External Link)*: OPC Toolbox integration tested for Matrikon OPC Server & InTouch Wonderware SCADA.
-
----
-
-## 📂 Repository Structure
-```text
-├── Simulink_Model/
-│   ├── ieee_grid_with_faults.slx       # The main 3-Phase power grid simulation
-│   └── ids_relay_logic.m               # The core V-I correlation algorithm
-├── SCADA_App/
-│   └── SCADA_Dashboard.mlapp           # The standalone App Designer UI
-├── Plotting_Scripts/
-│   └── master_dashboard_plotter.m      # Generates the 4-pane presentation graph
-└── README.md
