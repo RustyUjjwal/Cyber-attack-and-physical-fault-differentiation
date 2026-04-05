@@ -35,5 +35,3 @@ Hackers can manipulate digital SCADA data, but they cannot easily alter physical
 * **Simulation Engine:** MATLAB & Simulink
 * **Grid Physics:** Simscape Electrical / Specialized Power Systems (`powergui`)
 * **Control Logic:** MATLAB Function Blocks
-* **UI / Dashboard:** MATLAB App Designer (`.mlapp`)
-* *(Optional External Link)*: OPC Toolbox integration tested for Matrikon OPC Server & InTouch Wonderware SCADA.
