@@ -18,8 +18,7 @@ This project introduces a **Cyber-Physical Intrusion Detection System (IDS)** bu
   * `State 3`: Double Line-to-Ground (LLG) Fault
   * `State 4`: Three-Phase (LLL) Collapse
   * `State 5`: SCADA FDI Cyber-Attack
-* **Standalone SCADA Dashboard (HMI):** A custom MATLAB App Designer interface providing a real-time control room view of grid health, complete with color-coded diagnostic alerts and multi-pane timeline plotting.
-
+  
 ---
 
 ## 🧠 How It Works (The V-I Correlation Logic)
