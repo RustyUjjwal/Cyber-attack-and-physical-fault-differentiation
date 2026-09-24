@@ -115,26 +115,43 @@ classify_physical_fault()      Weighted Scoring Counter
 ## Repository Structure
 
 ```
-.
-├── models/
-│   └── grid_5bus_fdi_detection.slx      # Main Simulink model (5-bus network + detection blocks)
-├── functions/
-│   ├── detect_fdi.m                     # MATLAB Function block: cyber/physical/normal classifier
-│   └── classify_physical_fault.m        # MATLAB Function block: fault sub-classifier
-├── scripts/
-│   ├── run_simulation.m                 # Top-level script to configure & run the simulation
-│   ├── plot_results.m                   # Generates the 6 diagnostic figures
-│   └── compute_baselines.m              # Derives V_mean/I_mean/Z_mean from steady-state run
-├── data/
-│   └── simulation_logs/                 # Logged .mat outputs from test runs
-├── figures/
-│   └── ...                              # Exported diagnostic figures (Fig 5.1–5.6)
-├── docs/
-│   └── PPD_report_final.pdf             # Full project report
-└── README.md
+Cyber-attack-and-physical-fault-differentiation
+├── data
+│   ├── B5_AfterFault_data.csv
+│   ├── B5_BeforeFault_data.csv
+│   └── Cyber_Physical_System_Data.csv
+├── docs
+│   └── PPD_report_final.pdf
+├── figures
+│   ├── 3-Phase_Current_Comparison.png
+│   ├── 3-Phase_Voltage_Comparison.png
+│   ├── Bus_5_3-Phase_Manipulated_Cyber_Currents.png
+│   ├── Bus_5_3-Phase_Manipulated_Cyber_Voltages.png
+│   ├── Cyber_Data_and_Attack_Window_Overlay.png
+│   ├── Figure 2 - Bus 5 - 3-Phase Manipulated Cyber Voltages.png
+│   ├── Figure 3 - Bus 5 - 3-Phase Manipulated Cyber Currents.png
+│   ├── Figure 6 - Cyber Data & Attack Window Overlay.png
+│   ├── Plot 1A - Fault Classification Level.png
+│   ├── Plot 1B - Anomaly Detection Flag.png
+│   ├── Plot 1C - Cyber Attack Ground Truth.png
+│   ├── Subplot 1 - Pre-Fault Steady State Current.png
+│   ├── Subplot 1 - Pre-Fault Steady State Voltage.png
+│   ├── Subplot 2 - Actual Physical Grid Current.png
+│   ├── Subplot 2 - Actual Physical Grid Voltage.png
+│   ├── Subplot 3 - Manipulated Cyber Output Current.png
+│   ├── Subplot 3 - Manipulated Cyber Output Voltage.png
+│   ├── System_Logic_and_Detection_Flags.png
+│   └── vi relation.png
+├── model
+│   └── grid_5bus_fdi_detection.slx      # Simulink model (5-bus network + detect_fdi / classify_physical_fault blocks)
+└── scripts
+    ├── data_extraction.m                # Configure & run the simulation, extract logged data
+    ├── plotting.m                       # Generate the diagnostic figures
+    └── threshold_calculator.m           # Derive V_mean / I_mean / Z_mean baselines
+ 
 ```
 
-> Adjust the tree above to match your actual repo layout once files are uploaded.
+> `detect_fdi()` and `classify_physical_fault()` live inside `model/grid_5bus_fdi_detection.slx` as MATLAB Function blocks.
 
 ---
 
@@ -254,13 +271,13 @@ Outputs: fault_code (0–4)
 ## Getting Started
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/<your-username>/Cyber-attack-and-physical-fault-differentiation.git
+cd Cyber-attack-and-physical-fault-differentiation
 ```
 
 1. Open MATLAB and set the repository root as your working directory (or add it to path).
-2. Open `models/grid_5bus_fdi_detection.slx` in Simulink.
-3. Run `scripts/compute_baselines.m` once to (re-)derive `V_mean_base`, `I_mean_base`, `Z_mean_base` for your network configuration, if you modify the topology or loading.
+2. Open `model/grid_5bus_fdi_detection.slx` in Simulink.
+3. Run `scripts/threshold_calculator.m` once to (re-)derive `V_mean_base`, `I_mean_base`, `Z_mean_base` for your network configuration, if you modify the topology or loading.
 4. Run the simulation (see [Usage](#usage)).
 
 ---
@@ -270,25 +287,25 @@ cd <repo-name>
 ### Run the full simulation
 
 ```matlab
-run('scripts/run_simulation.m')
+run('scripts/data_extraction.m')
 ```
 
 This will:
 - Simulate 4 s of operation with sequential injection of all 5 FDI attack modes and all 4 physical fault types
 - Log `flag`, `flag_cyber_raw`, and `fault_code` time series
-- Save results to `data/simulation_logs/`
+- Export the logged data to `data/` (e.g., `Cyber_Physical_System_Data.csv`)
 
 ### Generate diagnostic figures
 
 ```matlab
-run('scripts/plot_results.m')
+run('scripts/plotting.m')
 ```
 
 Produces the six diagnostic figures described below, saved to `figures/`.
 
 ### Use the functions standalone
 
-Both `detect_fdi.m` and `classify_physical_fault.m` are plain MATLAB functions (wrapped as MATLAB Function blocks inside Simulink) and can be called directly on your own logged V-I data streams:
+`detect_fdi()` and `classify_physical_fault()` are implemented as **MATLAB Function blocks inside** `model/grid_5bus_fdi_detection.slx`. To run them outside Simulink, open each block, copy its code into a `.m` file of the same name on your MATLAB path, and call it on your own logged V-I data streams:
 
 ```matlab
 [flag, flag_cyber_raw] = detect_fdi(ia, ib, ic, va, vb, vc);
@@ -301,8 +318,22 @@ fault_code = classify_physical_fault(ia, ib, ic, va, vb, vc, flag);
 
 ## Outputs & Diagnostic Figures
 
-| Fig. | Description |
-|---|---|
+All figures are in `figures/`.
+
+| Fig. | Description | File |
+|---|---|---|
+| 5.1A | Fault Classification Level (`fault_code`, 0–4) over time | `Plot 1A - Fault Classification Level.png` |
+| 5.1B | Anomaly Detection Flag (`flag`: 0=Normal, 1=Cyber, 2=Physical) | `Plot 1B - Anomaly Detection Flag.png` |
+| 5.1C | Cyber Attack Ground-Truth Window (injection control signal) | `Plot 1C - Cyber Attack Ground Truth.png` |
+| 5.2 | Bus 5 — manipulated 3-phase cyber voltages | `Bus_5_3-Phase_Manipulated_Cyber_Voltages.png` |
+| 5.3 | Bus 5 — manipulated 3-phase cyber currents (shows true physical current is unaffected) | `Bus_5_3-Phase_Manipulated_Cyber_Currents.png` |
+| 5.4A–C | Pre-fault / actual physical / manipulated cyber 3-phase voltage comparison | `3-Phase_Voltage_Comparison.png` |
+| 5.5A–C | Pre-fault / actual physical / manipulated cyber 3-phase current comparison | `3-Phase_Current_Comparison.png` |
+| 5.6 | **Cyber Data & Attack Window Overlay** — waveform + `flag_cyber_raw` + shaded ground-truth attack windows (key validation plot) | `Cyber_Data_and_Attack_Window_Overlay.png` |
+
+Additional plots: `System_Logic_and_Detection_Flags.png` (detection logic and flags) and `vi relation.png` (V-I relationship).
+
+---|---|
 | 5.1A | Fault Classification Level (`fault_code`, 0–4) over time |
 | 5.1B | Anomaly Detection Flag (`flag`: 0=Normal, 1=Cyber, 2=Physical) |
 | 5.1C | Cyber Attack Ground-Truth Window (injection control signal) |
@@ -386,13 +417,6 @@ Ujjwal Keshri, "Simulating Power Grid Cyber-Attacks: Utilizing V-I Correlation t
 Differentiate FDI Attacks from Physical Faults," B.Tech Project Report, School of
 Electrical Sciences, Odisha University of Technology and Research, Bhubaneswar, 2026.
 ```
-
----
-
-## License
-
-Specify a license for this repository (e.g., MIT, Apache-2.0) — add a `LICENSE` file at the repo root. Until then, all rights are reserved by the author.
-
 ---
 
 ## Acknowledgements
