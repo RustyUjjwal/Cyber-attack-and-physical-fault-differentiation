@@ -312,22 +312,80 @@ fault_code = classify_physical_fault(ia, ib, ic, va, vb, vc, flag);
 
 ## Outputs and Diagnostic Figures
 
-All figures are in `figures/`.
+All figures are in [`figures/`](figures/). They are produced by `scripts/plotting.m` from the logged simulation data.
 
-| Fig. | Description | File |
-|---|---|---|
-| 5.1A | Fault classification level (`fault_code`, 0-4) over time | `Plot 1A - Fault Classification Level.png` |
-| 5.1B | Anomaly detection flag (`flag`: 0 = Normal, 1 = Cyber, 2 = Physical) | `Plot 1B - Anomaly Detection Flag.png` |
-| 5.1C | Cyber-attack ground-truth window (injection control signal) | `Plot 1C - Cyber Attack Ground Truth.png` |
-| 5.2 | Bus 5 manipulated 3-phase cyber voltages | `Figure 2 - Bus 5 - 3-Phase Manipulated Cyber Voltages.png` |
-| 5.3 | Bus 5 manipulated 3-phase cyber currents (true physical current is unaffected) | `Figure 3 - Bus 5 - 3-Phase Manipulated Cyber Currents.png` |
-| 5.4A-C | Pre-fault / actual physical / manipulated cyber voltage comparison | `Subplot 1/2/3 - ... Voltage.png`, `3-Phase_Voltage_Comparison.png` |
-| 5.5A-C | Pre-fault / actual physical / manipulated cyber current comparison | `Subplot 1/2/3 - ... Current.png`, `3-Phase_Current_Comparison.png` |
-| 5.6 | **Cyber data and attack-window overlay**: waveform + `flag_cyber_raw` + shaded ground-truth windows (key validation plot) | `Figure 6 - Cyber Data & Attack Window Overlay.png` |
+### Detection logic
 
-Additional plots: `System_Logic_and_Detection_Flags.png` (detection logic and flags) and `vi relation.png` (V-I relationship).
+![Detection logic flowchart](figures/vi%20relation.png)
+*Detection flowchart: RMS values feed a single voltage-boundary test that routes the signal to the physical domain (flag = 2, then `classify_physical_fault()`) or the cyber domain (flag = 1, weighted scoring counter).*
 
----
+<!-- TODO (author): this flowchart shows the voltage boundary as 0.6729 pu, but the thresholds in this README give 0.985 x 0.6872 = 0.6769 pu. Also the left box title reads "PHYSICAL DOMAINCYBER DOMAIN". Fix the image so it matches. -->
+
+### System response over the 4 s run (Fig. 5.1)
+
+![Fault classification level, anomaly detection flag and ground-truth attack windows](figures/System_Logic_and_Detection_Flags.png)
+*Top: `fault_code` (0 = normal/cyber, 1 = symmetrical, 2 = unsymmetrical, 3 = RPF, 4 = intermittent). Middle: `flag` (0 = normal, 1 = cyber, 2 = physical). Bottom: ground-truth cyber-attack injection windows.*
+
+The same three panels, saved separately:
+
+![Fig 5.1A Fault classification level](figures/Plot%201A%20-%20Fault%20Classification%20Level.png)
+*Fig. 5.1A: fault classification level (`fault_code`, 0-4) over time.*
+
+![Fig 5.1B Anomaly detection flag](figures/Plot%201B%20-%20Anomaly%20Detection%20Flag.png)
+*Fig. 5.1B: anomaly detection flag (`flag`: 0 = Normal, 1 = Cyber, 2 = Physical).*
+
+![Fig 5.1C Cyber attack ground truth](figures/Plot%201C%20-%20Cyber%20Attack%20Ground%20Truth.png)
+*Fig. 5.1C: cyber-attack ground-truth window (injection control signal).*
+
+### Manipulated measurements at Bus 5 (Fig. 5.2 and 5.3)
+
+![Bus 5 manipulated 3-phase cyber voltages](figures/Bus_5_3-Phase_Manipulated_Cyber_Voltages.png)
+*Fig. 5.2: Bus 5 manipulated three-phase voltages as seen by the detector.*
+
+![Bus 5 manipulated 3-phase cyber currents](figures/Bus_5_3-Phase_Manipulated_Cyber_Currents.png)
+*Fig. 5.3: Bus 5 three-phase currents over the same run (the true physical current is not altered by the injected attack).*
+
+![Figure 2 Bus 5 manipulated cyber voltages (plotting.m output)](figures/Figure%202%20-%20Bus%205%20-%203-Phase%20Manipulated%20Cyber%20Voltages.png)
+*Fig. 5.2 as saved by `plotting.m`.*
+
+![Figure 3 Bus 5 manipulated cyber currents (plotting.m output)](figures/Figure%203%20-%20Bus%205%20-%203-Phase%20Manipulated%20Cyber%20Currents.png)
+*Fig. 5.3 as saved by `plotting.m`.*
+
+### Pre-fault vs physical vs manipulated signals (Fig. 5.4 and 5.5)
+
+![Three-phase voltage comparison](figures/3-Phase_Voltage_Comparison.png)
+*Fig. 5.4A-C: pre-fault steady state, actual physical grid, and manipulated cyber output (voltage).*
+
+![Three-phase current comparison](figures/3-Phase_Current_Comparison.png)
+*Fig. 5.5A-C: pre-fault steady state, actual physical grid, and manipulated cyber output (current).*
+
+Individual panels:
+
+![Subplot 1 Pre-Fault Steady State Voltage](figures/Subplot%201%20-%20Pre-Fault%20Steady%20State%20Voltage.png)
+*Subplot 1: pre-fault steady state (voltage).*
+
+![Subplot 2 Actual Physical Grid Voltage](figures/Subplot%202%20-%20Actual%20Physical%20Grid%20Voltage.png)
+*Subplot 2: actual physical grid (voltage).*
+
+![Subplot 3 Manipulated Cyber Output Voltage](figures/Subplot%203%20-%20Manipulated%20Cyber%20Output%20Voltage.png)
+*Subplot 3: manipulated cyber output (voltage).*
+
+![Subplot 1 Pre-Fault Steady State Current](figures/Subplot%201%20-%20Pre-Fault%20Steady%20State%20Current.png)
+*Subplot 1: pre-fault steady state (current).*
+
+![Subplot 2 Actual Physical Grid Current](figures/Subplot%202%20-%20Actual%20Physical%20Grid%20Current.png)
+*Subplot 2: actual physical grid (current).*
+
+![Subplot 3 Manipulated Cyber Output Current](figures/Subplot%203%20-%20Manipulated%20Cyber%20Output%20Current.png)
+*Subplot 3: manipulated cyber output (current).*
+
+### Key validation plot (Fig. 5.6)
+
+![Manipulated voltages overlaid with cyber-attack injection windows](figures/Cyber_Data_and_Attack_Window_Overlay.png)
+*Fig. 5.6: manipulated three-phase voltages with the ground-truth attack windows (grey shading and dashed line). Five injection windows are visible between about 0.75 s and 3.36 s; physical faults occur at about 0.25 s, 2.47 s, 2.65 s and 3.63 s.*
+
+![Figure 6 Cyber data and attack window overlay (plotting.m output)](figures/Figure%206%20-%20Cyber%20Data%20%26%20Attack%20Window%20Overlay.png)
+*Fig. 5.6 as saved by `plotting.m`.*
 
 ## Results Summary
 
@@ -337,6 +395,9 @@ All results below come from a single 4 s simulation of the 5-bus model in which 
 - **All 4 physical fault types** were sub-classified correctly (including reverse power flow), with physical faults detected within **150 µs (3 samples)** of inception.
 - **Cyber detection latency:** about 100 µs for magnitude-based attacks (modes 1-3) and about 250 µs for pattern-based attacks (replay and noise, modes 4-5).
 - The dual-flag output prioritises physical-fault relay action while independently signalling a co-occurring cyber intrusion.
+- **Check against the logged data** (`data/Cyber_Physical_System_Data.csv`, injection windows read from Plot 1C): `flag_cyber` is active for 97-100% of the samples in each of the five injection windows and for about 0.4% of the samples outside them. In the window that overlaps a physical fault (about 2.47-2.82 s) `flag` reports the physical fault for most of the window while `flag_cyber` stays active, as designed. `flag` also stays at 1 for a short time after some windows end, and in the last window (about 3.17-3.36 s) `flag` stays at 0 while `flag_cyber` is 1, so use `flag_cyber` as the cyber-attack indicator.
+
+<!-- TODO (author): explain in this section why `flag` stays 0 during the last injection window (about 3.17-3.36 s) while `flag_cyber` is 1, and why `flag` holds at 1 briefly after windows end. -->
 
 | Attack mode | Condition | flag | fault_code |
 |---|---|---|---|
