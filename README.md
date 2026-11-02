@@ -384,9 +384,6 @@ Individual panels:
 ![Manipulated voltages overlaid with cyber-attack injection windows](figures/Cyber_Data_and_Attack_Window_Overlay.png)
 *Fig. 5.6: manipulated three-phase voltages with the ground-truth attack windows (grey shading and dashed line). Five injection windows are visible between about 0.75 s and 3.36 s; physical faults occur at about 0.25 s, 2.47 s, 2.65 s and 3.63 s.*
 
-![Figure 6 Cyber data and attack window overlay (plotting.m output)](figures/Figure%206%20-%20Cyber%20Data%20%26%20Attack%20Window%20Overlay.png)
-*Fig. 5.6 as saved by `plotting.m`.*
-
 ## Results Summary
 
 All results below come from a single 4 s simulation of the 5-bus model in which every attack mode and fault type is injected in sequence.
