@@ -326,17 +326,6 @@ All figures are in [`figures/`](figures/). They are produced by `scripts/plottin
 ![Fault classification level, anomaly detection flag and ground-truth attack windows](figures/System_Logic_and_Detection_Flags.png)
 *Top: `fault_code` (0 = normal/cyber, 1 = symmetrical, 2 = unsymmetrical, 3 = RPF, 4 = intermittent). Middle: `flag` (0 = normal, 1 = cyber, 2 = physical). Bottom: ground-truth cyber-attack injection windows.*
 
-The same three panels, saved separately:
-
-![Fig 5.1A Fault classification level](figures/Plot%201A%20-%20Fault%20Classification%20Level.png)
-*Fig. 5.1A: fault classification level (`fault_code`, 0-4) over time.*
-
-![Fig 5.1B Anomaly detection flag](figures/Plot%201B%20-%20Anomaly%20Detection%20Flag.png)
-*Fig. 5.1B: anomaly detection flag (`flag`: 0 = Normal, 1 = Cyber, 2 = Physical).*
-
-![Fig 5.1C Cyber attack ground truth](figures/Plot%201C%20-%20Cyber%20Attack%20Ground%20Truth.png)
-*Fig. 5.1C: cyber-attack ground-truth window (injection control signal).*
-
 ### Manipulated measurements at Bus 5 (Fig. 5.2 and 5.3)
 
 ![Bus 5 manipulated 3-phase cyber voltages](figures/Bus_5_3-Phase_Manipulated_Cyber_Voltages.png)
