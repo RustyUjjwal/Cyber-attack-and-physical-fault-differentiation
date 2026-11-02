@@ -316,7 +316,7 @@ All figures are in [`figures/`](figures/). They are produced by `scripts/plottin
 
 ### Detection logic
 
-![Detection logic flowchart](figures/vi%20relation.png)
+![Detection logic flowchart](figures/vi_relation_bg.png)
 *Detection flowchart: RMS values feed a single voltage-boundary test that routes the signal to the physical domain (flag = 2, then `classify_physical_fault()`) or the cyber domain (flag = 1, weighted scoring counter).*
 
 <!-- TODO (author): this flowchart shows the voltage boundary as 0.6729 pu, but the thresholds in this README give 0.985 x 0.6872 = 0.6769 pu. Also the left box title reads "PHYSICAL DOMAINCYBER DOMAIN". Fix the image so it matches. -->
