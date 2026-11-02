@@ -4,10 +4,11 @@
 ![Simulink](https://img.shields.io/badge/Simulink-Power_Systems-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-purple.svg)
 
-A MATLAB/Simulink project that implements a **real-time, physics-based anomaly detection system** for a 5-bus transmission network. It distinguishes **False Data Injection (FDI) cyber-attacks** from **genuine physical faults** using the correlation (or lack thereof) between voltage and current signals, and further sub-classifies detected physical faults into actionable categories for protective relaying.
+A MATLAB/Simulink project that implements a **real-time, physics-based anomaly detection scheme** for a 5-bus transmission network. It distinguishes **False Data Injection (FDI) cyber-attacks** from **genuine physical faults** using the correlation (or lack of it) between voltage and current, and sub-classifies detected physical faults into four categories useful for protective relaying: symmetrical, unsymmetrical, **reverse power flow (RPF)** and intermittent.
 
-> B.Tech Project — School of Electrical Sciences, Odisha University of Technology and Research, Bhubaneswar
-> Author: **Ujjwal Keshri** (Reg. No. 23110546) | Supervisor: **Prof. A. K. Barisal** | 2025–26
+> B.Tech Project, School of Electrical Sciences, Odisha University of Technology and Research, Bhubaneswar
+> Author: **Ujjwal Keshri** (Reg. No. 23110546) | Supervisor: **Prof. A. K. Barisal** | 2025-26
+> Full report: [`docs/PPD_report_final.pdf`](docs/PPD_report_final.pdf)
 
 ---
 
@@ -18,14 +19,15 @@ A MATLAB/Simulink project that implements a **real-time, physics-based anomaly d
 - [How It Works](#how-it-works)
 - [Repository Structure](#repository-structure)
 - [System Model](#system-model)
-- [Detection Algorithm — `detect_fdi()`](#detection-algorithm--detect_fdi)
-- [Sub-Classification Algorithm — `classify_physical_fault()`](#sub-classification-algorithm--classify_physical_fault)
+- [Detection Algorithm: `detect_fdi()`](#detection-algorithm--detect_fdi)
+- [Sub-Classification Algorithm: `classify_physical_fault()`](#sub-classification-algorithm--classify_physical_fault)
 - [Requirements](#requirements)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
-- [Outputs & Diagnostic Figures](#outputs--diagnostic-figures)
+- [Outputs and Diagnostic Figures](#outputs-and-diagnostic-figures)
 - [Results Summary](#results-summary)
-- [Performance Comparison](#performance-comparison)
+- [Limitations](#limitations)
+- [Comparison with Other Approaches](#comparison-with-other-approaches)
 - [Future Scope](#future-scope)
 - [References](#references)
 - [Citation](#citation)
@@ -36,34 +38,36 @@ A MATLAB/Simulink project that implements a **real-time, physics-based anomaly d
 
 ## Overview
 
-Modern smart grids depend on SCADA systems for real-time monitoring and control, which makes them vulnerable to **False Data Injection (FDI) attacks** — a class of stealthy cyber-attacks where an adversary manipulates sensor measurements without tripping conventional bad-data-detection (BDD) alarms. A key operational blind spot is that protective relays often cannot quickly tell whether a sudden voltage anomaly is a **cyber-attack** or a **real physical fault**, and misclassifying either has serious consequences (unnecessary outages vs. unprotected equipment damage).
+Modern smart grids depend on SCADA systems for real-time monitoring and control, which makes them vulnerable to **False Data Injection (FDI) attacks**: stealthy attacks in which an adversary manipulates sensor measurements without tripping conventional bad-data-detection (BDD) alarms. A key operational blind spot is that protective relays often cannot quickly tell whether a sudden voltage anomaly is a **cyber-attack** or a **real physical fault**. Getting it wrong has serious consequences: unnecessary outages on one side, unprotected equipment damage on the other.
 
 This project implements two MATLAB functions that together form a lightweight, model-free, real-time detection pipeline:
 
-1. **`detect_fdi()`** — classifies the system state every simulation step as:
-   - `0` → Normal
-   - `1` → Cyber-Attack (FDI)
-   - `2` → Physical Fault
-2. **`classify_physical_fault()`** — when a physical fault is flagged, sub-classifies it into:
-   - `1` → Symmetrical (3-Phase) Fault
-   - `2` → Unsymmetrical (Line-to-Ground) Fault
-   - `3` → Reverse Power Flow (RPF)
-   - `4` → Intermittent Fault (highest priority)
+1. **`detect_fdi()`** classifies the system state at every simulation step as:
+   - `0`: Normal
+   - `1`: Cyber-Attack (FDI)
+   - `2`: Physical Fault
+2. **`classify_physical_fault()`** runs when a physical fault is flagged and sub-classifies it as:
+   - `1`: Symmetrical (3-phase) fault
+   - `2`: Unsymmetrical (line-to-ground) fault
+   - `3`: Reverse Power Flow (RPF) fault
+   - `4`: Intermittent fault (highest priority)
 
-The core insight exploited is **V-I correlation**: a genuine physical fault causes voltage collapse *and* current surge simultaneously (correlated), whereas an FDI attack alters only the reported voltage signal while the true physical current remains unchanged (uncorrelated).
+The core idea is **V-I correlation**. A genuine physical fault causes voltage collapse *and* a current surge at the same time (the two move together), whereas an FDI attack in this model changes only the reported voltage while the true physical current stays unchanged (the two disagree).
+
+Reverse power flow is handled as a physical fault: power flowing back into a generator (motoring) is an abnormal operating condition that protection must act on, so the detector raises `flag = 2` for it and reports `fault_code = 3`.
 
 ---
 
 ## Key Features
 
-- **No network model or training data required** — purely threshold- and physics-based, unlike state-estimation or ML-based intrusion detection systems.
-- **Real-time capable**: runs at `Ts = 50 µs` (20 kHz), suitable for protective relay time-scales.
-- **Detects 5 distinct FDI attack modes**: Fake-Short, Fake-Sag, Fake-Swell, Replay Attack, Noise Injection.
-- **Sub-classifies 4 physical fault types**: Symmetrical, Unsymmetrical, Reverse Power Flow, Intermittent.
-- **Weighted event-scoring counter** with blanking/holdoff logic to suppress false positives during and after physical faults or breaker-open conditions.
-- **Dual-flag architecture** (`flag` + `flag_cyber_raw`) to correctly handle simultaneous cyber + physical scenarios.
-- **Fully documented, reproducible thresholds** — every constant is derived from baseline per-unit measurements (see [Detection Algorithm](#detection-algorithm--detect_fdi)).
-- Six diagnostic figures for visual/ground-truth validation, including a combined waveform + detection-flag overlay.
+- **No network model or training data required.** The scheme is threshold- and physics-based, unlike state-estimation or ML-based intrusion detection.
+- **Real-time capable:** runs at `Ts = 50 µs` (20 kHz), which is within relay time scales.
+- **Detects 5 FDI attack modes:** Fake-Short, Fake-Sag, Fake-Swell, Replay Attack, Noise Injection.
+- **Sub-classifies 4 physical fault types:** Symmetrical, Unsymmetrical, Reverse Power Flow, Intermittent.
+- **Weighted event-scoring counter** with blanking and holdoff logic to suppress false positives during and after physical faults and while a breaker is open.
+- **Dual-flag output** (`flag` + `flag_cyber_raw`) so simultaneous cyber and physical events can be reported independently.
+- **Documented thresholds:** every constant is derived from baseline per-unit measurements (see [Detection Algorithm](#detection-algorithm--detect_fdi)).
+- **Diagnostic figures** for visual ground-truth validation, including a combined waveform and detection-flag overlay.
 
 ---
 
@@ -72,43 +76,45 @@ The core insight exploited is **V-I correlation**: a genuine physical fault caus
 The detector computes RMS voltage (`Vrms`) and RMS current (`Irms`) at Bus 5 and applies a single **voltage-boundary separator**:
 
 ```
-V_boundary = 0.985 × V_mean_base = 0.6769 pu
+V_boundary = 0.985 x V_mean_base = 0.6769 pu
 
-is_phys_voltage  = (Vrms <  0.6769 pu)   → Physical domain
-is_cyber_voltage = (Vrms >= 0.6769 pu)   → Cyber domain
+is_phys_voltage  = (Vrms <  0.6769 pu)   -> Physical domain
+is_cyber_voltage = (Vrms >= 0.6769 pu)   -> Cyber domain
 ```
 
-- If an impedance/current anomaly is observed **while `is_phys_voltage` is true** → treated as a **physical fault** (`flag = 2`).
-- If the same anomaly is observed **while `is_cyber_voltage` is true** → treated as an **FDI event** (`flag = 1`).
+- An impedance or current anomaly seen **while `is_phys_voltage` is true** is treated as a **physical fault** (`flag = 2`).
+- The same kind of anomaly seen **while `is_cyber_voltage` is true** is treated as an **FDI event** (`flag = 1`).
 
-This single-boundary rule is reinforced by a **weighted cyber-event scoring counter** and a **reverse-power-flow (RPF) integrator** for robustness across all attack/fault types.
+This boundary rule is reinforced by a **weighted cyber-event scoring counter** and a **reverse-power-flow (RPF) integrator**.
 
 ```
         INPUTS: ia, ib, ic, va, vb, vc
-                     │
+                     |
           Compute Vrms, Irms (RMS values)
-                     │
-     Core Principle: physical fault → correlated V & I
-                      FDI attack     → uncorrelated V & I
-                     │
-        ┌────────────┴────────────┐
-        │  Vrms < 0.6769 pu ?      │
-        └────────────┬────────────┘
-     Yes ─────────────┼───────────── No
-        │                            │
- PHYSICAL DOMAIN                CYBER DOMAIN
- Z < Z_lower? Irms >            Z-anomaly? V_sag/swell?
- I_fault_th? dir_integral       Replay frozen? Noise var?
- <= -0.015?                            │
-        │                              │
-   flag = 2 (PHYSICAL)            flag = 1 (CYBER)
-        │                              │
-classify_physical_fault()      Weighted Scoring Counter
- Code 1: Symmetrical             (+5 / +2 per step,
- Code 2: Unsymmetrical            decays −5/step,
- Code 3: RPF                      confirmed at ≥10)
+                     |
+     Core principle: physical fault -> correlated V and I
+                      FDI attack    -> uncorrelated V and I
+                     |
+        +------------+------------+
+        |  Vrms < 0.6769 pu ?     |
+        +------------+------------+
+     Yes ------------+------------ No
+        |                           |
+ PHYSICAL DOMAIN               CYBER DOMAIN
+ Z < Z_lower? Irms >           Z anomaly? V sag/swell?
+ I_fault_th? dir_integral      Replay frozen? Noise variance?
+ <= -0.015?                           |
+        |                             |
+   flag = 2 (PHYSICAL)          flag = 1 (CYBER)
+        |                             |
+classify_physical_fault()      Weighted scoring counter
+ Code 1: Symmetrical           (+5 / +2 per step,
+ Code 2: Unsymmetrical          decays -5/step,
+ Code 3: Reverse Power Flow     confirmed at >= 10)
  Code 4: Intermittent
 ```
+
+<!-- TODO (author): the Fake-Sag threshold (V_sag_th = 0.6528 pu) is below V_boundary (0.6769 pu), yet the cyber domain is defined as Vrms >= V_boundary. Check the MATLAB Function block and state here how a fake sag is still classified as cyber (for example, whether the sag mode is evaluated on the manipulated signal path before the domain test). -->
 
 ---
 
@@ -117,38 +123,18 @@ classify_physical_fault()      Weighted Scoring Counter
 ```
 Cyber-attack-and-physical-fault-differentiation
 ├── data
-│   ├── B5_AfterFault_data.csv
-│   ├── B5_BeforeFault_data.csv
-│   └── Cyber_Physical_System_Data.csv
+│   ├── B5_AfterFault_data.csv           # Bus 5 3-phase V/I after a physical fault
+│   ├── B5_BeforeFault_data.csv          # Bus 5 3-phase V/I, healthy steady state
+│   └── Cyber_Physical_System_Data.csv   # Full 4 s run: cyber V/I + fault_classification, flag_detection, flag_cyber
 ├── docs
-│   └── PPD_report_final.pdf
-├── figures
-│   ├── 3-Phase_Current_Comparison.png
-│   ├── 3-Phase_Voltage_Comparison.png
-│   ├── Bus_5_3-Phase_Manipulated_Cyber_Currents.png
-│   ├── Bus_5_3-Phase_Manipulated_Cyber_Voltages.png
-│   ├── Cyber_Data_and_Attack_Window_Overlay.png
-│   ├── Figure 2 - Bus 5 - 3-Phase Manipulated Cyber Voltages.png
-│   ├── Figure 3 - Bus 5 - 3-Phase Manipulated Cyber Currents.png
-│   ├── Figure 6 - Cyber Data & Attack Window Overlay.png
-│   ├── Plot 1A - Fault Classification Level.png
-│   ├── Plot 1B - Anomaly Detection Flag.png
-│   ├── Plot 1C - Cyber Attack Ground Truth.png
-│   ├── Subplot 1 - Pre-Fault Steady State Current.png
-│   ├── Subplot 1 - Pre-Fault Steady State Voltage.png
-│   ├── Subplot 2 - Actual Physical Grid Current.png
-│   ├── Subplot 2 - Actual Physical Grid Voltage.png
-│   ├── Subplot 3 - Manipulated Cyber Output Current.png
-│   ├── Subplot 3 - Manipulated Cyber Output Voltage.png
-│   ├── System_Logic_and_Detection_Flags.png
-│   └── vi relation.png
+│   └── PPD_report_final.pdf             # Project report
+├── figures                              # Diagnostic plots (see Outputs and Diagnostic Figures)
 ├── model
 │   └── grid_5bus_fdi_detection.slx      # Simulink model (5-bus network + detect_fdi / classify_physical_fault blocks)
 └── scripts
-    ├── data_extraction.m                # Configure & run the simulation, extract logged data
-    ├── plotting.m                       # Generate the diagnostic figures
-    └── threshold_calculator.m           # Derive V_mean / I_mean / Z_mean baselines
- 
+    ├── data_extraction.m                # Menu-driven export of logged 3-phase V/I data to CSV
+    ├── plotting.m                       # Generates the diagnostic figures
+    └── threshold_calculator.m           # Derives V / I / Z baselines and thresholds
 ```
 
 > `detect_fdi()` and `classify_physical_fault()` live inside `model/grid_5bus_fdi_detection.slx` as MATLAB Function blocks.
@@ -159,63 +145,68 @@ Cyber-attack-and-physical-fault-differentiation
 
 | Parameter | Value |
 |---|---|
-| System Base | 100 MVA |
+| System base | 100 MVA |
 | Buses | 5 (2 generator + 3 load) |
-| Transmission Lines | 6 |
-| Bus 1 (Slack) | 1.06 pu, 0° |
+| Transmission lines | 6 |
+| Bus 1 (Slack) | 1.06 pu, 0 deg |
 | Bus 2 (Generator) | 1.00 pu (regulated) |
-| Total Active Load | ~283 MW |
-| Solver | `ode4` fixed-step (Specialized Power Systems toolbox) |
-| Sample Period (Ts) | 50 µs → 20 kHz |
-| Nominal Frequency | 50 Hz |
-| Monitoring Point | Bus 5 (FDI injection point) |
+| Total active load | ~283 MW |
+| Solver | `ode4` fixed-step (Specialized Power Systems) |
+| Sample period (Ts) | 50 µs (20 kHz) |
+| Nominal frequency | 50 Hz |
+| Monitoring point | Bus 5 (FDI injection point) |
+| Simulation length | 4 s (80,001 samples in the logged data) |
 
-The FDI attack is implemented as a **signal-path bias injection** between the true physical voltage measurement and the input to `detect_fdi()` — it never touches the physical network, so true line currents stay unchanged. This is the exact asymmetry the detector exploits.
+The FDI attack is implemented as a **signal-path bias injection** between the true physical voltage measurement and the input to `detect_fdi()`. It never touches the physical network, so the true line currents stay unchanged. This is the asymmetry the detector exploits.
 
 ---
 
-## Detection Algorithm — `detect_fdi()`
+## Detection Algorithm: `detect_fdi()`
 
-### Baseline parameters (derived from steady-state simulation)
+### Baseline parameters (from healthy steady-state simulation)
+
+`Vrms` and `Irms` are computed from the instantaneous three-phase signals, and `Z = Vrms / Irms`.
 
 | Symbol | Value | Meaning |
 |---|---|---|
 | `Z_mean_base` | 1.7702 pu | Steady-state V/I ratio at Bus 5 |
 | `I_mean_base` | 0.3882 pu | Normal RMS current magnitude |
 | `V_mean_base` | 0.6872 pu | Normal RMS voltage magnitude |
-| `V_boundary` | 0.6769 pu | 98.5% of `V_mean_base` — cyber/physical separator |
+| `V_boundary` | 0.6769 pu | 98.5% of `V_mean_base`; cyber/physical separator |
 
 ### Derived thresholds
 
 | Threshold | Formula | Value | Purpose |
 |---|---|---|---|
-| `Z_upper` | 1.25 × Z_mean_base | 2.2128 pu | High-impedance fault boundary |
-| `Z_lower` | 0.75 × Z_mean_base | 1.3277 pu | Low-impedance short-circuit boundary |
-| `I_fault_th` | 1.30 × I_mean_base | 0.5047 pu | Overcurrent / fake-short threshold |
-| `I_breaker` | 0.30 × I_mean_base | 0.1165 pu | Dead-bus / breaker-open suppression |
-| `V_sag_th` | 0.95 × V_mean_base | 0.6528 pu | Fake-sag lower boundary |
-| `V_swell_th` | 1.05 × V_mean_base | 0.7216 pu | Fake-swell upper boundary |
-| Noise threshold | 20 × (0.02 × I_mean)² | 0.001206 | Rolling variance threshold |
-| RPF threshold | `dir_integral ≤ −0.015 pu·s` | — | Reverse power-flow gate |
+| `Z_upper` | 1.25 x Z_mean_base | 2.2128 pu | High-impedance boundary |
+| `Z_lower` | 0.75 x Z_mean_base | 1.3277 pu | Low-impedance (short-circuit) boundary |
+| `I_fault_th` | 1.30 x I_mean_base | 0.5047 pu | Overcurrent / fake-short threshold |
+| `I_breaker` | 0.30 x I_mean_base | 0.1165 pu | Dead-bus / breaker-open suppression |
+| `V_sag_th` | 0.95 x V_mean_base | 0.6528 pu | Fake-sag boundary |
+| `V_swell_th` | 1.05 x V_mean_base | 0.7216 pu | Fake-swell boundary |
+| Noise threshold | 20 x (0.02 x I_mean)^2 | 0.001206 | Rolling-variance threshold |
+| RPF threshold | `dir_integral <= -0.015 pu·s` | n/a | Reverse power-flow gate |
+
+The percentage margins (75%, 125%, 130%, 95%, 105% and so on) are engineering choices applied on top of the measured baseline. `scripts/threshold_calculator.m` also prints 3-sigma statistical bounds for comparison.
 
 ### FDI attack modes detected
 
-| # | Mode | Condition | Score/step |
+| # | Mode | Condition | Score per step |
 |---|---|---|---|
 | 1 | Fake-Short | `Z < Z_lower` AND `Irms > I_fault_th`, cyber-voltage domain | +5 |
-| 2 | Fake-Sag | `Vrms < V_sag_th` AND `Irms > 0.5×I_mean` | +5 |
+| 2 | Fake-Sag | `Vrms < V_sag_th` AND `Irms > 0.5 x I_mean` | +5 |
 | 3 | Fake-Swell | `Vrms > V_swell_th` AND `Irms > 0.2717 pu` | +5 |
-| 4 | Replay Attack | `delta_v < 1e-3` for >5 consecutive steps | +2 |
+| 4 | Replay Attack | `delta_v < 1e-3` for more than 5 consecutive steps | +2 |
 | 5 | Noise Injection | rolling 20-sample variance > 0.001206 | +2 |
 
-A **weighted scoring counter** (`cyber_count`) accumulates these scores, decays by −5/step with no active condition, and confirms a cyber-attack once `cyber_count ≥ 10`. The counter is reset and blanked for 200 steps (10 ms) after a physical fault clears, and while the breaker is open (`Irms < I_breaker`).
+A **weighted scoring counter** (`cyber_count`) accumulates these scores, decays by 5 per step when no condition is active, and confirms a cyber-attack once `cyber_count >= 10`. The counter is reset and blanked for 200 steps (10 ms) after a physical fault clears, and while the breaker is open (`Irms < I_breaker`).
 
 ### Timing parameters
 
 | Parameter | Value | Duration |
 |---|---|---|
-| Sample period (Ts) | 50 µs | — |
-| Physical fault confirm | `fault_count ≥ 3` | 150 µs |
+| Sample period (Ts) | 50 µs | n/a |
+| Physical fault confirm | `fault_count >= 3` | 150 µs |
 | Fault latch duration | 250 steps | 12.5 ms |
 | Cyber holdoff post-fault | 200 steps | 10.0 ms |
 | Replay frozen threshold | `frozen_count > 5` | 250 µs |
@@ -223,9 +214,9 @@ A **weighted scoring counter** (`cyber_count`) accumulates these scores, decays 
 | Intermittent window | 4000 steps | 200 ms |
 | RMS rolling buffer | 400 samples | 20 ms (1 cycle) |
 
-**Function I/O:**
+**Function I/O**
 ```
-Inputs : ia, ib, ic, va, vb, vc   (instantaneous 3-phase currents/voltages)
+Inputs : ia, ib, ic, va, vb, vc   (instantaneous 3-phase currents and voltages)
 Outputs: flag (0/1/2), flag_cyber_raw
 Persistent state: cyber_count, fault_count, fault_latch, dir_integral,
                   frozen_count, noise_var_buf, is_rpf_active
@@ -233,168 +224,171 @@ Persistent state: cyber_count, fault_count, fault_latch, dir_integral,
 
 ---
 
-## Sub-Classification Algorithm — `classify_physical_fault()`
+## Sub-Classification Algorithm: `classify_physical_fault()`
 
-Activated only when `flag == 2`. Outputs a `fault_code` (0–4) via a strict priority ladder:
+Active only when `flag == 2`. It outputs a `fault_code` (0-4) using a strict priority ladder:
 
-| Code | Fault Type | Criterion | Priority |
+| Code | Fault type | Criterion | Priority |
 |---|---|---|---|
-| 0 | Normal | `flag ≠ 2` (gatekeeper) | — |
-| 4 | Intermittent | ≥3 flag=2 transitions within 200 ms | **Highest** (overrides all) |
-| 3 | Reverse Power Flow | `dir_integral ≤ −0.015 pu·s` during flag=2 | 2nd |
+| 0 | Normal | `flag != 2` (gatekeeper) | n/a |
+| 4 | Intermittent | 3 or more `flag = 2` transitions within 200 ms | **Highest** (overrides all) |
+| 3 | Reverse Power Flow | `dir_integral <= -0.015 pu·s` during `flag = 2` | 2nd |
 | 2 | Unsymmetrical (L-G) | phase-current unbalance > 15% | 3rd |
-| 1 | Symmetrical (3-Phase) | phase-current unbalance ≤ 15% (default) | Lowest |
+| 1 | Symmetrical (3-phase) | phase-current unbalance <= 15% (default) | Lowest |
 
-Phase-current unbalance (computed from rolling 400-sample / 1-cycle RMS buffers):
+Phase-current unbalance is computed from rolling 400-sample (one cycle) RMS buffers:
 
 ```
-unbalance = max(|Ia_rms − Iavg|, |Ib_rms − Iavg|, |Ic_rms − Iavg|) / Iavg_rms
+unbalance = max(|Ia_rms - Iavg|, |Ib_rms - Iavg|, |Ic_rms - Iavg|) / Iavg_rms
 ```
 
-**Function I/O:**
+**Function I/O**
 ```
 Inputs : ia, ib, ic, va, vb, vc, flag (from detect_fdi)
-Outputs: fault_code (0–4)
+Outputs: fault_code (0-4)
 ```
 
 ---
 
 ## Requirements
 
-- MATLAB R2021b or later (recommended)
+- MATLAB R2023a or later (older versions are untested)
 - Simulink
-- Simscape Electrical → **Specialized Power Systems** toolbox
-- No additional toolboxes or external datasets required
+- Simscape Electrical, **Specialized Power Systems** library
+- No other toolboxes or external datasets
 
 ---
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/<your-username>/Cyber-attack-and-physical-fault-differentiation.git
+git clone https://github.com/RustyUjjwal/Cyber-attack-and-physical-fault-differentiation.git
 cd Cyber-attack-and-physical-fault-differentiation
 ```
 
-1. Open MATLAB and set the repository root as your working directory (or add it to path).
+1. Open MATLAB and set the repository root as the working directory (or add it to the path).
 2. Open `model/grid_5bus_fdi_detection.slx` in Simulink.
-3. Run `scripts/threshold_calculator.m` once to (re-)derive `V_mean_base`, `I_mean_base`, `Z_mean_base` for your network configuration, if you modify the topology or loading.
-4. Run the simulation (see [Usage](#usage)).
+3. Run the simulation (4 s, fixed step 50 µs).
+4. Export the logged signals with `scripts/data_extraction.m`, then derive baselines and generate plots as described below.
 
 ---
 
 ## Usage
 
-### Run the full simulation
+The scripts are **interactive and expect specific file names in the current MATLAB folder**, so copy or rename the files from `data/` as shown.
 
-```matlab
-run('scripts/data_extraction.m')
-```
+### 1. Export logged data: `scripts/data_extraction.m`
 
-This will:
-- Simulate 4 s of operation with sequential injection of all 5 FDI attack modes and all 4 physical fault types
-- Log `flag`, `flag_cyber_raw`, and `fault_code` time series
-- Export the logged data to `data/` (e.g., `Cyber_Physical_System_Data.csv`)
+Run after the Simulink simulation so the logged signals are in the MATLAB workspace. A menu asks for one bus or all buses, then writes per-bus CSV files named `z_B<bus>_<tag>_data.csv` (for example `z_B5_BeforeFault_data.csv`) and the combined `Cyber_Physical_System_Data.csv` with columns `cyber_I_Phase{A,B,C}`, `cyber_V_Phase{A,B,C}`, `fault_classification`, `flag_detection`, `flag_cyber`.
 
-### Generate diagnostic figures
+### 2. Derive baselines and thresholds: `scripts/threshold_calculator.m`
 
-```matlab
-run('scripts/plotting.m')
-```
+Reads `z_B<bus>_data.csv` (columns `Va_B<n>`, `Vb_B<n>`, `Vc_B<n>`, `Ia_B<n>`, `Ib_B<n>`, `Ic_B<n>`), prints mean/std/min/max of Z, V, I and P, and compares 3-sigma bounds against the practical thresholds used by the detector. Use a healthy-state file such as `data/B5_BeforeFault_data.csv`, copied and renamed to `z_B5_data.csv`.
 
-Produces the six diagnostic figures described below, saved to `figures/`.
+### 3. Generate figures: `scripts/plotting.m`
 
-### Use the functions standalone
+Reads three files from the current folder:
 
-`detect_fdi()` and `classify_physical_fault()` are implemented as **MATLAB Function blocks inside** `model/grid_5bus_fdi_detection.slx`. To run them outside Simulink, open each block, copy its code into a `.m` file of the same name on your MATLAB path, and call it on your own logged V-I data streams:
+| Expected by `plotting.m` | Repository file |
+|---|---|
+| `Cyber_Physical_System_Data_Perfected.csv` | `data/Cyber_Physical_System_Data.csv` |
+| `z_B5_BeforeFault_data.csv` | `data/B5_BeforeFault_data.csv` |
+| `z_B5_AfterFault_data.csv` | `data/B5_AfterFault_data.csv` |
+
+Copy the repository files to the current folder under the names in the left column, then run `plotting.m`. Figures are saved to the current folder; move them into `figures/` afterwards.
+
+### Using the functions standalone
+
+`detect_fdi()` and `classify_physical_fault()` are MATLAB Function blocks inside `model/grid_5bus_fdi_detection.slx`. To run them outside Simulink, open each block, copy its code into a `.m` file of the same name on the MATLAB path, and call it on your own V-I streams:
 
 ```matlab
 [flag, flag_cyber_raw] = detect_fdi(ia, ib, ic, va, vb, vc);
 fault_code = classify_physical_fault(ia, ib, ic, va, vb, vc, flag);
 ```
 
-> Note: both functions use **persistent variables** to maintain state across calls — reset the workspace / clear functions between independent simulation runs.
+> Both functions use **persistent variables**. Run `clear functions` between independent runs.
 
 ---
 
-## Outputs & Diagnostic Figures
+## Outputs and Diagnostic Figures
 
 All figures are in `figures/`.
 
 | Fig. | Description | File |
 |---|---|---|
-| 5.1A | Fault Classification Level (`fault_code`, 0–4) over time | `Plot 1A - Fault Classification Level.png` |
-| 5.1B | Anomaly Detection Flag (`flag`: 0=Normal, 1=Cyber, 2=Physical) | `Plot 1B - Anomaly Detection Flag.png` |
-| 5.1C | Cyber Attack Ground-Truth Window (injection control signal) | `Plot 1C - Cyber Attack Ground Truth.png` |
-| 5.2 | Bus 5 — manipulated 3-phase cyber voltages | `Bus_5_3-Phase_Manipulated_Cyber_Voltages.png` |
-| 5.3 | Bus 5 — manipulated 3-phase cyber currents (shows true physical current is unaffected) | `Bus_5_3-Phase_Manipulated_Cyber_Currents.png` |
-| 5.4A–C | Pre-fault / actual physical / manipulated cyber 3-phase voltage comparison | `3-Phase_Voltage_Comparison.png` |
-| 5.5A–C | Pre-fault / actual physical / manipulated cyber 3-phase current comparison | `3-Phase_Current_Comparison.png` |
-| 5.6 | **Cyber Data & Attack Window Overlay** — waveform + `flag_cyber_raw` + shaded ground-truth attack windows (key validation plot) | `Cyber_Data_and_Attack_Window_Overlay.png` |
+| 5.1A | Fault classification level (`fault_code`, 0-4) over time | `Plot 1A - Fault Classification Level.png` |
+| 5.1B | Anomaly detection flag (`flag`: 0 = Normal, 1 = Cyber, 2 = Physical) | `Plot 1B - Anomaly Detection Flag.png` |
+| 5.1C | Cyber-attack ground-truth window (injection control signal) | `Plot 1C - Cyber Attack Ground Truth.png` |
+| 5.2 | Bus 5 manipulated 3-phase cyber voltages | `Figure 2 - Bus 5 - 3-Phase Manipulated Cyber Voltages.png` |
+| 5.3 | Bus 5 manipulated 3-phase cyber currents (true physical current is unaffected) | `Figure 3 - Bus 5 - 3-Phase Manipulated Cyber Currents.png` |
+| 5.4A-C | Pre-fault / actual physical / manipulated cyber voltage comparison | `Subplot 1/2/3 - ... Voltage.png`, `3-Phase_Voltage_Comparison.png` |
+| 5.5A-C | Pre-fault / actual physical / manipulated cyber current comparison | `Subplot 1/2/3 - ... Current.png`, `3-Phase_Current_Comparison.png` |
+| 5.6 | **Cyber data and attack-window overlay**: waveform + `flag_cyber_raw` + shaded ground-truth windows (key validation plot) | `Figure 6 - Cyber Data & Attack Window Overlay.png` |
 
 Additional plots: `System_Logic_and_Detection_Flags.png` (detection logic and flags) and `vi relation.png` (V-I relationship).
-
----|---|
-| 5.1A | Fault Classification Level (`fault_code`, 0–4) over time |
-| 5.1B | Anomaly Detection Flag (`flag`: 0=Normal, 1=Cyber, 2=Physical) |
-| 5.1C | Cyber Attack Ground-Truth Window (injection control signal) |
-| 5.2 | Bus 5 — manipulated 3-phase cyber voltages |
-| 5.3 | Bus 5 — manipulated 3-phase cyber currents (shows true physical current is unaffected) |
-| 5.4A–C | Pre-fault / actual physical / manipulated cyber 3-phase voltage comparison |
-| 5.5A–C | Pre-fault / actual physical / manipulated cyber 3-phase current comparison |
-| 5.6 | **Cyber Data & Attack Window Overlay** — waveform + `flag_cyber_raw` + shaded ground-truth attack windows (key validation plot) |
 
 ---
 
 ## Results Summary
 
-- **All 5 FDI attack modes** correctly detected (`flag = 1`), with **zero spurious physical-fault alarms** (`fault_code = 0` throughout every cyber window).
-- **All 4 physical fault types** correctly sub-classified, with detection within **150 µs (3 samples)** of fault inception.
-- **Cyber detection latency**: ~100 µs for magnitude-based attacks (Modes 1–3), ~250 µs for pattern-based attacks (Replay/Noise, Modes 4–5).
-- Dual-flag output (`flag` + `flag_cyber_raw`) correctly prioritizes physical-fault relay action while independently signalling co-occurring cyber intrusion.
+All results below come from a single 4 s simulation of the 5-bus model in which every attack mode and fault type is injected in sequence.
 
-| Attack Mode | Condition | flag | fault_code |
+- **All 5 FDI attack modes** were detected (`flag = 1`), with **no spurious physical-fault alarms** (`fault_code = 0` during every cyber window).
+- **All 4 physical fault types** were sub-classified correctly (including reverse power flow), with physical faults detected within **150 µs (3 samples)** of inception.
+- **Cyber detection latency:** about 100 µs for magnitude-based attacks (modes 1-3) and about 250 µs for pattern-based attacks (replay and noise, modes 4-5).
+- The dual-flag output prioritises physical-fault relay action while independently signalling a co-occurring cyber intrusion.
+
+| Attack mode | Condition | flag | fault_code |
 |---|---|---|---|
-| Fake-Short | `Z < 1.3277`, cyber-voltage | 1 | 0 |
-| Fake-Sag | `Vrms < 0.6528`, cyber-voltage | 1 | 0 |
-| Fake-Swell | `Vrms > 0.7216`, cyber-voltage | 1 | 0 |
+| Fake-Short | `Z < 1.3277`, cyber-voltage domain | 1 | 0 |
+| Fake-Sag | `Vrms < 0.6528`, cyber-voltage domain | 1 | 0 |
+| Fake-Swell | `Vrms > 0.7216`, cyber-voltage domain | 1 | 0 |
 | Replay Attack | frozen > 250 µs | 1 | 0 |
 | Noise Injection | rolling variance > 0.001206 | 1 | 0 |
 
-| Fault Type | Detection Time | flag | fault_code |
+| Fault type | Detection criterion | flag | fault_code |
 |---|---|---|---|
-| Symmetrical (3-Phase) | 150 µs | 2 | 1 |
-| Unsymmetrical (L-G) | 150 µs | 2 | 2 |
-| Reverse Power Flow | `dir_integral ≤ −0.015` | 2 | 3 |
-| Intermittent | 3 transitions / 200 ms | 2 | 4 |
+| Symmetrical (3-phase) | 150 µs, unbalance <= 15% | 2 | 1 |
+| Unsymmetrical (L-G) | 150 µs, unbalance > 15% | 2 | 2 |
+| Reverse Power Flow | `dir_integral <= -0.015 pu·s` | 2 | 3 |
+| Intermittent | 3 transitions within 200 ms | 2 | 4 |
 
 ---
 
-## Performance Comparison
+## Limitations
 
-| Parameter | Proposed V-I Correlation | State-Est. BDD | ML-Based IDS | Data-Driven (Anwar et al.) |
+- Validated only in simulation, on one 5-bus network, at a single monitoring bus (Bus 5). No hardware or real measurement data was used.
+- Thresholds were derived from the same network they are tested on, so they must be recalibrated for a different topology or loading.
+- The cyber/physical boundary is narrow (98.5% of the healthy voltage), and the scheme assumes the attacker alters only the voltage measurement. Coordinated attacks (FDI during a real fault) and multi-point attacks were not tested.
+- Measurement noise, CT/VT errors and communication delays were not modelled in detail.
+
+---
+
+## Comparison with Other Approaches
+
+A qualitative comparison based on the literature. No head-to-head benchmark was run, so the entries describe typical characteristics, not measured results.
+
+| Aspect | This work (V-I correlation) | State-estimation BDD | ML-based IDS | Data-driven (Anwar et al.) |
 |---|---|---|---|---|
-| Sample period | 50 µs | Iteration-dependent | Batch/stream | Offline |
-| Cyber detection speed | 100–250 µs | Iteration delay | Inference delay | Post-processing |
-| Physical fault speed | 150 µs (3 samples) | State update | Inference delay | Post-processing |
 | Network model needed | No | Yes (Y-bus) | No | No |
 | Training data needed | No | No | Yes (large) | Yes |
-| FDI attack types | 5 modes | Residual anomaly only | Multiple | Statistical only |
-| Fault sub-classification | 4 types | None | Possible | None |
+| Typical operation | Sample-by-sample, 50 µs | Per estimation cycle | Batch / inference | Offline analysis |
+| Fault sub-classification | 4 types | Typically none | Possible | Typically none |
 | Dual flag output | Yes | No | No | No |
-| False-positive suppression | Weighted counter + blanking | Threshold only | Model-dependent | Statistical |
+| False-positive suppression | Weighted counter and blanking | Thresholds | Model-dependent | Statistical |
 
 ---
 
 ## Future Scope
 
-- Extend to larger benchmark networks (IEEE 14-, 30-, 118-bus) to evaluate scalability.
-- Investigate **coordinated attacks** (FDI injected during an active physical fault) to stress-test misclassification resistance.
+- Extend to larger benchmark networks (IEEE 14-, 30-, 118-bus) to test scalability.
+- Investigate **coordinated attacks** (FDI during an active physical fault).
 - Integrate PMU synchrophasor data to improve RPF and intermittent-fault sensitivity.
-- Adaptive baseline calibration to auto-update `V_mean_base`, `I_mean_base`, `Z_mean_base` under changing load conditions.
-- Hardware-in-the-Loop (HIL) validation on RTDS / OPAL-RT real-time simulators.
+- Add adaptive baseline calibration for `V_mean_base`, `I_mean_base`, `Z_mean_base` under changing load.
+- Hardware-in-the-loop validation on RTDS / OPAL-RT.
 - Extend to inverter-dominated microgrids with different fault-current signatures.
-- Explore multi-point FDI attacks targeting several buses/sensors simultaneously.
-- Align with **IEC 62351** (cybersecurity) and **IEC 61850** (substation automation) standards.
+- Explore multi-point FDI attacks across several buses and sensors.
+- Align with **IEC 62351** (cybersecurity) and **IEC 61850** (substation automation).
 
 ---
 
@@ -402,9 +396,9 @@ Additional plots: `System_Logic_and_Detection_Flags.png` (detection logic and fl
 
 1. A. Anwar, A. N. Mahmood, Z. Tari, "A data-driven approach to distinguish cyber-attacks from physical faults in a smart grid," *Proc. 8th Int. Conf. Secur. Inf. Netw. (SIN)*, 2015.
 2. "Centralized dynamic state estimation algorithm for detecting and distinguishing faults and cyber-attacks in power systems," IEEE Xplore, 2025.
-3. M. M. Aman, G. B. Jasmon, Q. A. Khan, A. H. B. Abu Bakar, J. J. Jamian, "Modeling and simulation of reverse power relay for generator protection," *Proc. IEEE Int. Power Eng. Optim. Conf. (PEOCO)*, 2012, pp. 317–322.
-4. S. Sridhar, A. Hahn, M. Govindarasu, "Cyber-physical system security for the electric power grid," *Proc. IEEE*, vol. 100, no. 1, pp. 210–224, 2012.
-5. V. S. Rajkumar, M. Tealane, A. Ştefanov, A. Presekal, P. Palensky, "Cyber Attacks on Power System Automation and Protection and Impact Analysis," *2020 IEEE PES Innovative Smart Grid Technologies Europe (ISGT-Europe)*, 2020. doi: 10.1109/ISGTEurope47291.2020.9248840
+3. M. M. Aman, G. B. Jasmon, Q. A. Khan, A. H. B. Abu Bakar, J. J. Jamian, "Modeling and simulation of reverse power relay for generator protection," *Proc. IEEE Int. Power Eng. Optim. Conf. (PEOCO)*, 2012, pp. 317-322.
+4. S. Sridhar, A. Hahn, M. Govindarasu, "Cyber-physical system security for the electric power grid," *Proc. IEEE*, vol. 100, no. 1, pp. 210-224, 2012.
+5. V. S. Rajkumar, M. Tealane, A. Stefanov, A. Presekal, P. Palensky, "Cyber Attacks on Power System Automation and Protection and Impact Analysis," *2020 IEEE PES Innovative Smart Grid Technologies Europe (ISGT-Europe)*, 2020. doi: 10.1109/ISGTEurope47291.2020.9248840
 
 ---
 
@@ -417,8 +411,15 @@ Ujjwal Keshri, "Simulating Power Grid Cyber-Attacks: Utilizing V-I Correlation t
 Differentiate FDI Attacks from Physical Faults," B.Tech Project Report, School of
 Electrical Sciences, Odisha University of Technology and Research, Bhubaneswar, 2026.
 ```
+
+---
+
+## License
+
+Released under the MIT License. See [LICENSE](LICENSE).
+
 ---
 
 ## Acknowledgements
 
-Developed under the guidance of **Prof. A. K. Barisal**, Professor, School of Electrical Sciences, Odisha University of Technology and Research, Bhubaneswar, as part of the B.Tech in Electrical Engineering curriculum (2025–26).
+Developed under the guidance of **Prof. A. K. Barisal**, Professor, School of Electrical Sciences, Odisha University of Technology and Research, Bhubaneswar, as part of the B.Tech in Electrical Engineering curriculum (2025-26).
